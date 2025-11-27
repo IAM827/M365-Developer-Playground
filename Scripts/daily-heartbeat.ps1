@@ -55,14 +55,14 @@ try {
 
     # Activity 3: Get recent emails (metadata only)
     Write-Host "`n3. Checking recent emails..."
-    $messages = Invoke-RestMethod -Uri "https://graph.microsoft.com/v1.0/users/admin@thelhub.onmicrosoft.com/messages?`$top=3&`$select=subject,receivedDateTime" -Headers $headers
+    $messages = Invoke-RestMethod -Uri "https://graph.microsoft.com/v1.0/users/admin@thelhub.co.za/messages?`$top=3&`$select=subject,receivedDateTime" -Headers $headers
     foreach ($message in $messages.value) {
         Write-Host "   - [$($message.receivedDateTime)] $($message.subject)"
     }
 
     # Activity 4: Get Teams presence (if available)
     Write-Host "`n4. Checking Microsoft 365 services..."
-    $me = Invoke-RestMethod -Uri "https://graph.microsoft.com/v1.0/users/admin@thelhub.onmicrosoft.com" -Headers $headers
+    $me = Invoke-RestMethod -Uri "https://graph.microsoft.com/v1.0/users/admin@thelhub.co.za" -Headers $headers
     Write-Host "   - User: $($me.displayName)"
     Write-Host "   - Mail: $($me.mail)"
     Write-Host "   - Department: $($me.department)"
