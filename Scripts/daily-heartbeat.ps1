@@ -36,7 +36,7 @@ function Invoke-GraphRequest {
         return Invoke-RestMethod -Uri $Uri -Headers $Headers -Method $Method -ErrorAction Stop
     }
     catch {
-        # FIX: Handle 404 Not Found cleanly (Common for users without OneDrive)
+        # FIX: Handle 404 Not Found cleanly (Common for users without OneDrive provisioned)
         if ($_.Exception.Message -match "404") {
             Write-Host "   - Note: Resource not found (404). User likely has no OneDrive provisioned. Skipping." -ForegroundColor DarkGray
             return $null
@@ -54,6 +54,7 @@ try {
     Write-Host "Timestamp: $timestamp"
     
     # --- COIN FLIP RANDOMIZER ---
+    # Generate a number between 1 and 10 to decide which activities run today
     $diceRoll = Get-Random -Minimum 1 -Maximum 11
     Write-Host "Daily Randomizer Roll: $diceRoll / 10" -ForegroundColor Magenta
     # ----------------------------
@@ -65,7 +66,7 @@ try {
         'Content-Type' = 'application/json'
     }
 
-    # 2. Random User Lookup (Always Runs)
+    # 2. Random User Lookup (Always Runs - Required for other steps)
     Write-Host "`n1. Finding a random target user..." -ForegroundColor Yellow
     $usersReq = Invoke-GraphRequest -Uri "https://graph.microsoft.com/v1.0/users?`$top=50&`$select=id,displayName,mail,userPrincipalName" -Headers $headers
     $targetUser = $usersReq.value | Where-Object { -not [string]::IsNullOrWhiteSpace($_.mail) } | Get-Random
@@ -76,7 +77,7 @@ try {
         Write-Warning "   - No valid users found. Skipping user-specific tests."
     }
 
-    # 3. Activity: SharePoint Sites (Runs 70% of the time)
+    # 3. Activity: SharePoint Sites (Runs 70% of the time: Rolls 1-7)
     if ($diceRoll -le 7) {
         Write-Host "`n2. Accessing SharePoint sites..." -ForegroundColor Yellow
         $sites = Invoke-GraphRequest -Uri "https://graph.microsoft.com/v1.0/sites?`$top=3" -Headers $headers
@@ -89,7 +90,7 @@ try {
         Write-Host "`n2. Skipping SharePoint activity today (Randomizer)" -ForegroundColor Gray
     }
 
-    # 4. Activity: Exchange Online (Always runs if user found)
+    # 4. Activity: Exchange Online (Always runs if user found, ensuring at least one read action)
     if ($targetUser) {
         Write-Host "`n3. Checking recent emails for $($targetUser.mail)..." -ForegroundColor Yellow
         $messages = Invoke-GraphRequest -Uri "https://graph.microsoft.com/v1.0/users/$($targetUser.id)/messages?`$top=3&`$select=subject,receivedDateTime" -Headers $headers
@@ -100,7 +101,8 @@ try {
         }
     }
 
-    # 5. Activity: OneDrive Write/Delete (Runs 70% of the time)
+    # 5. Activity: OneDrive Write/Delete (Runs 70% of the time: Rolls 4-10)
+    # This ensures that sometimes we do SharePoint but not OneDrive, and vice versa.
     if ($diceRoll -ge 4) {
         if ($targetUser) {
             Write-Host "`n4. Performing OneDrive Write/Delete Activity..." -ForegroundColor Yellow
