@@ -54,10 +54,10 @@ try {
         'Content-Type' = 'application/json'
     }
 
-    # 2. Random User Lookup (UPDATED)
+    # 2. Random User Lookup
     Write-Host "`n1. Finding a random target user..." -ForegroundColor Yellow
     
-    # Fetch top 50 users (increased from 10 to give a better pool for randomization)
+    # Fetch top 50 users to give a better pool for randomization
     $usersReq = Invoke-GraphRequest -Uri "https://graph.microsoft.com/v1.0/users?`$top=50&`$select=id,displayName,mail,userPrincipalName" -Headers $headers
     
     # Filter for users with emails, then pick ONE randomly
@@ -110,15 +110,19 @@ try {
         }
     }
 
-    # Save a report artifact
+    # 6. Save Report with Unique Suffix
+    $timestampSuffix = Get-Date -Format 'yyyyMMdd-HHmmss'
+    $fileName = "heartbeat-report-$timestampSuffix.json"
+    
     $report = @{
         Status = "Success"
         Timestamp = $timestamp
         TargetUser = if ($targetUser) { $targetUser.userPrincipalName } else { "None" }
         ActivityType = "Daily Heartbeat"
     }
-    $report | ConvertTo-Json | Out-File "heartbeat-report.json"
-    Write-Host "`nReport saved to heartbeat-report.json" -ForegroundColor White
+    
+    $report | ConvertTo-Json | Out-File $fileName
+    Write-Host "`nReport saved to: $fileName" -ForegroundColor White
 
     Write-Host "`n=== Heartbeat Completed Successfully ===" -ForegroundColor Cyan
 }
