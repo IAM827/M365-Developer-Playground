@@ -20,13 +20,14 @@ jobs:
 
     # Ubuntu runners include PowerShell 7 (pwsh) by default.
     # The 'Setup PowerShell' (.NET) step is usually redundant and can be removed.
-
+    - name: Debug - List Files
+      run: ls -R
     - name: Run M365 Heartbeat Script
       shell: pwsh
       run: |
         # FIXED: Use forward slashes '/' for Linux runners
         # FIXED: Ensure 'scripts' matches your folder case (usually lowercase)
-        ./scripts/daily-heartbeat.ps1 -TenantId "$env:TENANT_ID" -ClientId "$env:CLIENT_ID" -ClientSecret "$env:CLIENT_SECRET"
+        ./Scripts/daily-heartbeat.ps1 -TenantId "$env:TENANT_ID" -ClientId "$env:CLIENT_ID" -ClientSecret "$env:CLIENT_SECRET"
         
     - name: Upload Heartbeat Report
       uses: actions/upload-artifact@v4
