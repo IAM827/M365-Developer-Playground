@@ -6,6 +6,10 @@ on:
     - cron: '0 9 * * *'
   workflow_dispatch: # Allows manual triggering
 
+# REQUIRED: Give the token permission to write back to the repo
+permissions:
+  contents: write
+
 env:
   TENANT_ID: ${{ secrets.TENANT_ID }}
   CLIENT_ID: ${{ secrets.CLIENT_ID }}
@@ -18,23 +22,41 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    # Ubuntu runners include PowerShell 7 (pwsh) by default.
-    # The 'Setup PowerShell' (.NET) step is usually redundant and can be removed.
-    - name: Debug - List Files
-      run: ls -R
     - name: Run M365 Heartbeat Script
       shell: pwsh
       run: |
-        # FIXED: Use forward slashes '/' for Linux runners
-        # FIXED: Ensure 'scripts' matches your folder case (usually lowercase)
+        # Run the script (It now generates a file like heartbeat-report-20251130.json)
         ./Scripts/daily-heartbeat.ps1 -TenantId "$env:TENANT_ID" -ClientId "$env:CLIENT_ID" -ClientSecret "$env:CLIENT_SECRET"
+
+    - name: Commit and Push Report
+      run: |
+        # 1. Configure Git Identity (Required for commits)
+        git config --global user.name 'GitHub Action'
+        git config --global user.email 'action@github.com'
         
+        # 2. Create Reports folder if it doesn't exist
+        mkdir -p Reports
+        
+        # 3. Move the generated JSON report into the Reports folder
+        mv heartbeat-report-*.json Reports/
+        
+        # 4. Stage and Commit
+        git add Reports/*.json
+        
+        # Only commit if there are changes (avoids errors if run twice)
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "Auto-add daily heartbeat report [skip ci]"
+          git push
+        fi
+
+    # Upload the report as an Artifact too (Optional, but good backup)
     - name: Upload Heartbeat Report
       uses: actions/upload-artifact@v4
-      if: always() # Ensures logs are saved even if the script crashes
+      if: always()
       with:
         name: heartbeat-logs
         path: |
-          heartbeat-report.json
-          heartbeat-success.log
+          Reports/*.json
         retention-days: 30
