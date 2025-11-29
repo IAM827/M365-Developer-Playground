@@ -18,24 +18,22 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Setup PowerShell
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '8.0'
+    # Ubuntu runners include PowerShell 7 (pwsh) by default.
+    # The 'Setup PowerShell' (.NET) step is usually redundant and can be removed.
 
     - name: Run M365 Heartbeat Script
       shell: pwsh
       run: |
-        .\Scripts\daily-heartbeat.ps1 -TenantId "$env:TENANT_ID" -ClientId "$env:CLIENT_ID" -ClientSecret "$env:CLIENT_SECRET"
+        # FIXED: Use forward slashes '/' for Linux runners
+        # FIXED: Ensure 'scripts' matches your folder case (usually lowercase)
+        ./Scripts/daily-heartbeat.ps1 -TenantId "$env:TENANT_ID" -ClientId "$env:CLIENT_ID" -ClientSecret "$env:CLIENT_SECRET"
         
-    - name: Create success log
-      if: success()
-      run: |
-        echo "Workflow completed successfully on $(date)" >> $GITHUB_WORKSPACE/heartbeat-success.log
-        
-    - name: Upload success log
+    - name: Upload Heartbeat Report
       uses: actions/upload-artifact@v4
+      if: always() # Ensures logs are saved even if the script crashes
       with:
         name: heartbeat-logs
-        path: ${{ github.workspace }}/heartbeat-success.log
-        retention-days: 1
+        path: |
+          heartbeat-report.json
+          heartbeat-success.log
+        retention-days: 30
