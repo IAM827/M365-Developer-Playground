@@ -54,20 +54,19 @@ try {
         'Content-Type' = 'application/json'
     }
 
-    # 2. Dynamic User Lookup (FIXED)
-    Write-Host "`n1. Finding target user for tests..." -ForegroundColor Yellow
+    # 2. Random User Lookup (UPDATED)
+    Write-Host "`n1. Finding a random target user..." -ForegroundColor Yellow
     
-    # FIX: We removed the 'ne null' filter which causes 400 Bad Request errors.
-    # Instead, we fetch top 10 users and filter using PowerShell.
-    $usersReq = Invoke-GraphRequest -Uri "https://graph.microsoft.com/v1.0/users?`$top=10&`$select=id,displayName,mail,userPrincipalName" -Headers $headers
+    # Fetch top 50 users (increased from 10 to give a better pool for randomization)
+    $usersReq = Invoke-GraphRequest -Uri "https://graph.microsoft.com/v1.0/users?`$top=50&`$select=id,displayName,mail,userPrincipalName" -Headers $headers
     
-    # Use PowerShell to find the first user who has a non-empty Mail property
-    $targetUser = $usersReq.value | Where-Object { -not [string]::IsNullOrWhiteSpace($_.mail) } | Select-Object -First 1
+    # Filter for users with emails, then pick ONE randomly
+    $targetUser = $usersReq.value | Where-Object { -not [string]::IsNullOrWhiteSpace($_.mail) } | Get-Random
     
     if ($targetUser) {
-        Write-Host "   - Target User Found: $($targetUser.displayName) ($($targetUser.mail))" -ForegroundColor Green
+        Write-Host "   - Random User Selected: $($targetUser.displayName) ($($targetUser.mail))" -ForegroundColor Green
     } else {
-        Write-Warning "   - No user with an email address found in the top 10 users. Skipping user-specific tests."
+        Write-Warning "   - No valid users found in the top 50. Skipping user-specific tests."
     }
 
     # Activity 3: SharePoint Sites
