@@ -54,17 +54,20 @@ try {
         'Content-Type' = 'application/json'
     }
 
-    # 2. Dynamic User Lookup (Enhancement: No more hardcoded emails)
+    # 2. Dynamic User Lookup (FIXED)
     Write-Host "`n1. Finding target user for tests..." -ForegroundColor Yellow
-    # Get the top 1 user who has a mail attribute (likely an active user)
-    $targetUserReq = Invoke-GraphRequest -Uri "https://graph.microsoft.com/v1.0/users?`$top=1&`$filter=mail ne null&`$select=id,displayName,mail,userPrincipalName" -Headers $headers
     
-    $targetUser = $targetUserReq.value[0]
+    # FIX: We removed the 'ne null' filter which causes 400 Bad Request errors.
+    # Instead, we fetch top 10 users and filter using PowerShell.
+    $usersReq = Invoke-GraphRequest -Uri "https://graph.microsoft.com/v1.0/users?`$top=10&`$select=id,displayName,mail,userPrincipalName" -Headers $headers
+    
+    # Use PowerShell to find the first user who has a non-empty Mail property
+    $targetUser = $usersReq.value | Where-Object { -not [string]::IsNullOrWhiteSpace($_.mail) } | Select-Object -First 1
     
     if ($targetUser) {
         Write-Host "   - Target User Found: $($targetUser.displayName) ($($targetUser.mail))" -ForegroundColor Green
     } else {
-        Write-Warning "   - No suitable user found with email. Using generic 'admin' checks only."
+        Write-Warning "   - No user with an email address found in the top 10 users. Skipping user-specific tests."
     }
 
     # Activity 3: SharePoint Sites
@@ -87,7 +90,7 @@ try {
         }
     }
 
-    # Activity 5: OneDrive (Write & Delete - Enhancement)
+    # Activity 5: OneDrive (Write & Delete)
     if ($targetUser) {
         Write-Host "`n4. Performing OneDrive Write/Delete Activity..." -ForegroundColor Yellow
         $folderName = "_Heartbeat_Temp_$(Get-Date -Format 'MMddHHmm')"
@@ -112,7 +115,7 @@ try {
     $report = @{
         Status = "Success"
         Timestamp = $timestamp
-        TargetUser = $targetUser.userPrincipalName
+        TargetUser = if ($targetUser) { $targetUser.userPrincipalName } else { "None" }
         ActivityType = "Daily Heartbeat"
     }
     $report | ConvertTo-Json | Out-File "heartbeat-report.json"
