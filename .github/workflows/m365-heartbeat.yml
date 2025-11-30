@@ -13,8 +13,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Install PowerShell Core
-        uses: actions/setup-pwsh@v2
+      # REMOVED: "Install PowerShell Core" step (not required on ubuntu-latest)
 
       - name: Run Heartbeat Script
         id: heartbeat
@@ -24,7 +23,7 @@ jobs:
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
         run: |
-          pwsh ./daily-heartbeat.ps1 `
+          ./daily-heartbeat.ps1 `
             -TenantId $env:TENANT_ID `
             -ClientId $env:CLIENT_ID `
             -ClientSecret $env:CLIENT_SECRET
