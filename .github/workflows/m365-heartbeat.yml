@@ -22,7 +22,7 @@ jobs:
           CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
         # If your script is in a "Scripts" folder, change the path below to ./Scripts/daily-heartbeat.ps1
         run: |
-          .Scripts/daily-heartbeat.ps1 `
+          .daily-heartbeat.ps1 `
             -TenantId $env:TENANT_ID `
             -ClientId $env:CLIENT_ID `
             -ClientSecret $env:CLIENT_SECRET
