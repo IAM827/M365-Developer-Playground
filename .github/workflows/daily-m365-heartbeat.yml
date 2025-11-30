@@ -26,7 +26,7 @@ jobs:
       shell: pwsh
       run: |
         # Run the script (It now generates a file like heartbeat-report-20251130.json)
-        ./Scripts/daily-heartbeat.ps1 -TenantId "$env:TENANT_ID" -ClientId "$env:CLIENT_ID" -ClientSecret "$env:CLIENT_SECRET"
+        ./Scripts/daily-heartbeat-one.ps1 -TenantId "$env:TENANT_ID" -ClientId "$env:CLIENT_ID" -ClientSecret "$env:CLIENT_SECRET"
 
     - name: Commit and Push Report
       run: |
