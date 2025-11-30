@@ -1,30 +1,23 @@
-name: M365 Daily Heartbeat
+name: M365 Developer Heartbeat
 
 on:
   schedule:
-    - cron: "0 7 * * *"  # Runs daily at 07:00 UTC (adjust as needed)
-  workflow_dispatch:      # Allows manual run from GitHub Actions tab
+    - cron: "0 7 * * *"
+  workflow_dispatch:
 
 jobs:
   run-heartbeat:
-    name: Run M365 Developer Heartbeat
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Set up PowerShell
-        uses: PowerShell/PowerShell@v1
-        with:
-          pwsh-version: "latest"
-
-      - name: Install required modules (optional)
-        shell: pwsh
-        run: |
-          Write-Host "No required modules for REST-based script."
+      - name: Install PowerShell Core
+        uses: actions/setup-pwsh@v2
 
       - name: Run Heartbeat Script
+        id: heartbeat
         shell: pwsh
         env:
           TENANT_ID: ${{ secrets.TENANT_ID }}
@@ -36,10 +29,37 @@ jobs:
             -ClientId $env:CLIENT_ID `
             -ClientSecret $env:CLIENT_SECRET
 
-      - name: Upload heartbeat report artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: heartbeat-report
-          path: |
-            heartbeat-report-*.json
-          if-no-files-found: ignore
+      - name: Find heartbeat report
+        id: find_report
+        run: |
+          FILE=$(ls heartbeat-report-*.json | head -n 1)
+          echo "file=$FILE" >> $GITHUB_OUTPUT
+
+      - name: Install sendemail
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y sendemail libio-socket-ssl-perl libnet-ssleay-perl
+
+      - name: Email summary
+        shell: bash
+        env:
+          SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          EMAIL_TO:   ${{ secrets.EMAIL_TO }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+        run: |
+          REPORT="${{ steps.find_report.outputs.file }}"
+          NOW=$(date +"%Y-%m-%d %H:%M:%S")
+
+          sendemail \
+            -f "$EMAIL_FROM" \
+            -t "$EMAIL_TO" \
+            -u "M365 Heartbeat Summary - $NOW" \
+            -m "Your daily Microsoft 365 Developer Heartbeat summary is attached.\n\nTimestamp: $NOW\nReport: $REPORT" \
+            -a "$REPORT" \
+            -s "$SMTP_SERVER:$SMTP_PORT" \
+            -xu "$SMTP_USER" \
+            -xp "$SMTP_PASS" \
+            -o tls=yes
