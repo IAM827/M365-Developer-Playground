@@ -23,7 +23,7 @@ jobs:
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
         run: |
-          ./daily-heartbeat.ps1 `
+          ./Scripts/daily-heartbeat.ps1 `
             -TenantId $env:TENANT_ID `
             -ClientId $env:CLIENT_ID `
             -ClientSecret $env:CLIENT_SECRET
