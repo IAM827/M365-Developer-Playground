@@ -189,7 +189,7 @@ try {
 
             if ($drive) {
                 # 5.3 Upload a small JSON report directly into heartbeat folder using content endpoint
-                $uploadUri = "https://graph.microsoft.com/v1.0/users/$($targetUser.id)/drive/root:/$heartbeatFolder/$fileName:/content"
+                $uploadUri = "https://graph.microsoft.com/v1.0/users/$($targetUser.id)/drive/root:/$heartbeatFolder/${fileName}:/content"
                 $smallReport = @{
                     Timestamp = (Get-Date).ToString("o")
                     TargetUser = $targetUser.userPrincipalName
@@ -201,7 +201,7 @@ try {
                     # Use PUT to create new file with content
                     $response = Invoke-RestMethod -Method Put -Uri $uploadUri -Headers @{ Authorization = "Bearer $token"; "Content-Type" = "application/json" } -Body $smallReport -ErrorAction Stop
                     if ($response.id) {
-                        Log "   - Uploaded heartbeat file: $fileName" "Green"
+                        Log "   - Uploaded heartbeat file: ${fileName}" "Green"
                         # Optionally delete the file (simulate write+delete) - keep this optional
                         # To remove, uncomment:
                         # Invoke-Graph -Method Delete -Uri "https://graph.microsoft.com/v1.0/users/$($targetUser.id)/drive/items/$($response.id)" -Headers $headers
