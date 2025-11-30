@@ -1,0 +1,45 @@
+name: M365 Daily Heartbeat
+
+on:
+  schedule:
+    - cron: "0 7 * * *"  # Runs daily at 07:00 UTC (adjust as needed)
+  workflow_dispatch:      # Allows manual run from GitHub Actions tab
+
+jobs:
+  run-heartbeat:
+    name: Run M365 Developer Heartbeat
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up PowerShell
+        uses: PowerShell/PowerShell@v1
+        with:
+          pwsh-version: "latest"
+
+      - name: Install required modules (optional)
+        shell: pwsh
+        run: |
+          Write-Host "No required modules for REST-based script."
+
+      - name: Run Heartbeat Script
+        shell: pwsh
+        env:
+          TENANT_ID: ${{ secrets.TENANT_ID }}
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        run: |
+          pwsh ./daily-heartbeat.ps1 `
+            -TenantId $env:TENANT_ID `
+            -ClientId $env:CLIENT_ID `
+            -ClientSecret $env:CLIENT_SECRET
+
+      - name: Upload heartbeat report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: heartbeat-report
+          path: |
+            heartbeat-report-*.json
+          if-no-files-found: ignore
